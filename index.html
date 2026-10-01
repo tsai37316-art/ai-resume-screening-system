@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Resume Screening System</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #eef5ff, #f8fbff);
+            color: #172554;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1200px;
+            margin: auto;
+            padding: 35px 0 60px;
+        }
+
+        /* ================= HEADER ================= */
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        header h1 {
+            font-size: 42px;
+            color: #1769aa;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 18px;
+            color: #64748b;
+        }
+
+        /* ================= UPLOAD ================= */
+
+        .upload-card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            text-align: center;
+            box-shadow: 0 10px 35px rgba(30, 64, 175, 0.12);
+            margin-bottom: 30px;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .upload-card h2 {
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+
+        .upload-card p {
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .file-area {
+            border: 2px dashed #60a5fa;
+            border-radius: 15px;
+            padding: 25px;
+            background: #f8fbff;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin: auto;
+            max-width: 100%;
+        }
+
+        .file-name {
+            margin-top: 12px;
+            color: #334155;
+            font-weight: bold;
+        }
+
+        .analyze-btn {
+            margin-top: 20px;
+            border: none;
+            padding: 14px 35px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .analyze-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ================= LOADING ================= */
+
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #2563eb;
+            font-weight: bold;
+        }
+
+        .spinner {
+            width: 35px;
+            height: 35px;
+            border: 4px solid #dbeafe;
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ================= ERROR ================= */
+
+        #errorBox {
+            display: none;
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* ================= RESULTS ================= */
+
+        #results {
+            display: none;
+        }
+
+        .section-title {
+            font-size: 25px;
+            margin: 30px 0 18px;
+            color: #1e3a8a;
+        }
+
+        /* ================= GRID ================= */
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 22px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        .card h2 {
+            font-size: 21px;
+            margin-bottom: 18px;
+            color: #1e3a8a;
+        }
+
+        /* ================= SCORE ================= */
+
+        .score-card {
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            margin: 10px auto 20px;
+
+            background:
+                conic-gradient(
+                    #1683dc var(--score),
+                    #e5e7eb var(--score)
+                );
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            position: relative;
+        }
+
+        .score-circle::before {
+            content: "";
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .score-number {
+            position: relative;
+            z-index: 1;
+            font-size: 42px;
+            font-weight: bold;
+            color: #1677c8;
+        }
+
+        .score-message {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        /* ================= SKILLS ================= */
+
+        .skill-category {
+            margin-bottom: 20px;
+        }
+
+        .skill-category h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #475569;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 8px 13px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .frontend {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .backend {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        .other {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .matched {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .missing {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .recommended {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .job {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .empty {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* ================= SCORE BREAKDOWN ================= */
+
+        .breakdown-item {
+            margin-bottom: 18px;
+        }
+
+        .breakdown-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 7px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        .progress {
+            height: 13px;
+            background: #e5e7eb;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #2563eb, #38bdf8);
+            border-radius: 20px;
+            transition: width 1s ease;
+        }
+
+        /* ================= RESUME TEXT ================= */
+
+        .resume-text-card {
+            margin-top: 25px;
+        }
+
+        .resume-text {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 450px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.7;
+            color: #334155;
+            font-size: 15px;
+        }
+
+        /* ================= FOOTER ================= */
+
+        footer {
+            text-align: center;
+            margin-top: 45px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        /* ================= RESPONSIVE ================= */
+
+        @media (max-width: 800px) {
+
+            header h1 {
+                font-size: 30px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .upload-card {
+                padding: 25px 18px;
+            }
+
+            .container {
+                width: 94%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- ================= HEADER ================= -->
+
+    <header>
+        <h1>🤖 AI Resume Screening System</h1>
+        <p>
+            Upload your resume and get an AI-powered screening result
+        </p>
+    </header>
+
+
+    <!-- ================= UPLOAD ================= -->
+
+    <div class="upload-card">
+
+        <div class="upload-icon">📄</div>
+
+        <h2>Select Your Resume</h2>
+
+        <p>
+            Upload your resume in PDF format
+        </p>
+
+        <div class="file-area">
+
+            <input
+                type="file"
+                id="resumeFile"
+                accept=".pdf,application/pdf"
+            >
+
+            <div
+                id="fileName"
+                class="file-name"
+            >
+                No file selected
+            </div>
+
+            <button
+                id="analyzeButton"
+                class="analyze-btn"
+                onclick="analyzeResume()"
+            >
+                🔍 Analyze Resume
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= LOADING ================= -->
+
+    <div id="loading">
+
+        <div class="spinner"></div>
+
+        ⏳ Analyzing your resume...
+
+    </div>
+
+
+    <!-- ================= ERROR ================= -->
+
+    <div id="errorBox"></div>
+
+
+    <!-- ================= RESULTS ================= -->
+
+    <div id="results">
+
+        <!-- SCORE + SKILLS -->
+
+        <div class="grid">
+
+            <!-- SCORE -->
+
+            <div class="card score-card">
+
+                <h2>🎯 Resume Match Score</h2>
+
+                <div
+                    class="score-circle"
+                    id="scoreCircle"
+                    style="--score: 0%;"
+                >
+
+                    <div
+                        class="score-number"
+                        id="scoreNumber"
+                    >
+                        0%
+                    </div>
+
+                </div>
+
+                <p
+                    class="score-message"
+                    id="scoreMessage"
+                >
+                    Resume analysis completed.
+                </p>
+
+            </div>
+
+
+            <!-- SKILLS DETECTED -->
+
+            <div class="card">
+
+                <h2>🧠 Skills Detected</h2>
+
+                <div class="skill-category">
+
+                    <h3>💻 Frontend Skills</h3>
+
+                    <div
+                        class="tags"
+                        id="frontendSkills"
+                    ></div>
+
+                </div>
+
+
+                <div class="skill-category">
+
+                    <h3>⚙️ Backend Skills</h3>
+
+                    <div
+                        class="tags"
+                        id="backendSkills"
+                    ></div>
+
+                </div>
+
+
+                <div class="skill-category">
+
+                    <h3>🛠️ Other Skills</h3>
+
+                    <div
+                        class="tags"
+                        id="otherSkills"
+                    ></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- MATCHED + MISSING -->
+
+        <div class="grid">
+
+            <!-- MATCHED -->
+
+            <div class="card">
+
+                <h2>✅ Matched Skills</h2>
+
+                <div
+                    class="tags"
+                    id="matchedSkills"
+                ></div>
+
+            </div>
+
+
+            <!-- MISSING -->
+
+            <div class="card">
+
+                <h2>❌ Missing Skills</h2>
+
+                <div
+                    class="tags"
+                    id="missingSkills"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- SCORE BREAKDOWN -->
+
+        <div class="card">
+
+            <h2>📊 Score Breakdown</h2>
+
+
+            <div class="breakdown-item">
+
+                <div class="breakdown-header">
+                    <span>🧠 Skills</span>
+                    <span id="skillsScoreText">0%</span>
+                </div>
+
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        id="skillsProgress"
+                    ></div>
+                </div>
+
+            </div>
+
+
+            <div class="breakdown-item">
+
+                <div class="breakdown-header">
+                    <span>🎓 Education</span>
+                    <span id="educationScoreText">0%</span>
+                </div>
+
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        id="educationProgress"
+                    ></div>
+                </div>
+
+            </div>
+
+
+            <div class="breakdown-item">
+
+                <div class="breakdown-header">
+                    <span>🚀 Projects</span>
+                    <span id="projectsScoreText">0%</span>
+                </div>
+
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        id="projectsProgress"
+                    ></div>
+                </div>
+
+            </div>
+
+
+            <div class="breakdown-item">
+
+                <div class="breakdown-header">
+                    <span>💼 Experience</span>
+                    <span id="experienceScoreText">0%</span>
+                </div>
+
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        id="experienceProgress"
+                    ></div>
+                </div>
+
+            </div>
+
+
+            <div class="breakdown-item">
+
+                <div class="breakdown-header">
+                    <span>🏆 Certifications</span>
+                    <span id="certificationsScoreText">0%</span>
+                </div>
+
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        id="certificationsProgress"
+                    ></div>
+                </div>
+
+            </div>
+
+
+            <div class="breakdown-item">
+
+                <div class="breakdown-header">
+                    <span>📋 Completeness</span>
+                    <span id="completenessScoreText">0%</span>
+                </div>
+
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        id="completenessProgress"
+                    ></div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RECOMMENDED SKILLS -->
+
+        <div class="card">
+
+            <h2>💡 Recommended Skills</h2>
+
+            <div
+                class="tags"
+                id="recommendedSkills"
+            ></div>
+
+        </div>
+
+
+        <!-- RECOMMENDED JOB ROLES -->
+
+        <div class="card">
+
+            <h2>💼 Recommended Job Roles</h2>
+
+            <div
+                class="tags"
+                id="recommendedRoles"
+            ></div>
+
+        </div>
+
+
+        <!-- EXTRACTED RESUME TEXT -->
+
+        <div class="card resume-text-card">
+
+            <h2>📄 Extracted Resume Text</h2>
+
+            <div
+                class="resume-text"
+                id="resumeText"
+            >
+                No extracted text available.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer>
+
+        AI Resume Screening System
+        <br>
+        Built with HTML, CSS, JavaScript & Python
+
+    </footer>
+
+</div>
+
+
+<script>
+
+    // ============================================
+    // FILE SELECTION
+    // ============================================
+
+    const fileInput = document.getElementById("resumeFile");
+
+    const fileName = document.getElementById("fileName");
+
+    fileInput.addEventListener("change", function () {
+
+        if (this.files.length > 0) {
+
+            fileName.textContent =
+                "Selected: " + this.files[0].name;
+
+        } else {
+
+            fileName.textContent =
+                "No file selected";
+
+        }
+
+    });
+
+
+    // ============================================
+    // MAIN ANALYZE FUNCTION
+    // ============================================
+
+    async function analyzeResume() {
+
+        const file = fileInput.files[0];
+
+        const button =
+            document.getElementById("analyzeButton");
+
+        const loading =
+            document.getElementById("loading");
+
+        const results =
+            document.getElementById("results");
+
+        const errorBox =
+            document.getElementById("errorBox");
+
+
+        // Reset error
+
+        errorBox.style.display = "none";
+
+        errorBox.textContent = "";
+
+
+        // Validate file
+
+        if (!file) {
+
+            showError(
+                "Please select a PDF resume first."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            file.type !== "application/pdf" &&
+            !file.name.toLowerCase().endsWith(".pdf")
+        ) {
+
+            showError(
+                "Please select a PDF file."
+            );
+
+            return;
+
+        }
+
+
+        // Show loading
+
+        results.style.display = "none";
+
+        loading.style.display = "block";
+
+        button.disabled = true;
+
+        button.textContent = "Analyzing...";
+
+
+        // Create FormData
+
+        const formData = new FormData();
+
+        formData.append(
+            "resume",
+            file
+        );
+
+
+        try {
+
+            // ============================================
+            // SEND TO FLASK BACKEND
+            // ============================================
+
+            const response = await fetch(
+                "http://127.0.0.1:5000/analyze",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Server returned error: " +
+                    response.status
+                );
+
+            }
+
+
+            const data = await response.json();
+
+
+            console.log(
+                "Backend response:",
+                data
+            );
+
+
+            // ============================================
+            // DISPLAY RESULTS
+            // ============================================
+
+            displayResults(data);
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            showError(
+                "Unable to connect to the backend. " +
+                "Make sure your Flask server is running."
+            );
+
+        } finally {
+
+            loading.style.display = "none";
+
+            button.disabled = false;
+
+            button.textContent =
+                "🔍 Analyze Resume";
+
+        }
+
+    }
+
+
+    // ============================================
+    // DISPLAY RESULTS
+    // ============================================
+
+    function displayResults(data) {
+
+        document.getElementById(
+            "results"
+        ).style.display = "block";
+
+
+        // ============================================
+        // SCORE
+        // ============================================
+
+        let score =
+            Number(
+                data.match_score ??
+                data.score ??
+                data.resume_match_score ??
+                0
+            );
+
+
+        // Keep score between 0 and 100
+
+        score = Math.max(
+            0,
+            Math.min(
+                100,
+                score
+            )
+        );
+
+
+        document.getElementById(
+            "scoreNumber"
+        ).textContent =
+            Math.round(score) + "%";
+
+
+        document.getElementById(
+            "scoreCircle"
+        ).style.setProperty(
+            "--score",
+            score + "%"
+        );
+
+
+        let message = "";
+
+
+        if (score >= 80) {
+
+            message =
+                "Excellent match! Your resume strongly matches the required skills.";
+
+        } else if (score >= 60) {
+
+            message =
+                "Good match. A few improvements can make your resume stronger.";
+
+        } else if (score >= 40) {
+
+            message =
+                "Moderate match. Some important skills are missing.";
+
+        } else {
+
+            message =
+                "Low match. Consider improving your skills and resume content.";
+
+        }
+
+
+        document.getElementById(
+            "scoreMessage"
+        ).textContent = message;
+
+
+        // ============================================
+        // SKILLS DETECTED
+        // ============================================
+
+        const detected =
+            data.skills_detected ||
+            data.detected_skills ||
+            {};
+
+
+        displaySkills(
+            "frontendSkills",
+            detected.frontend ||
+            detected.frontend_skills ||
+            data.frontend_skills ||
+            []
+        );
+
+
+        displaySkills(
+            "backendSkills",
+            detected.backend ||
+            detected.backend_skills ||
+            data.backend_skills ||
+            []
+        );
+
+
+        displaySkills(
+            "otherSkills",
+            detected.other ||
+            detected.other_skills ||
+            data.other_skills ||
+            []
+        );
+
+
+        // ============================================
+        // MATCHED SKILLS
+        // ============================================
+
+        displaySkills(
+            "matchedSkills",
+            data.matched_skills ||
+            data.matchedSkills ||
+            []
+        );
+
+
+        // ============================================
+        // MISSING SKILLS
+        // ============================================
+
+        displaySkills(
+            "missingSkills",
+            data.missing_skills ||
+            data.missingSkills ||
+            []
+        );
+
+
+        // ============================================
+        // RECOMMENDED SKILLS
+        // ============================================
+
+        displaySkills(
+            "recommendedSkills",
+            data.recommended_skills ||
+            data.recommendedSkills ||
+            []
+        );
+
+
+        // ============================================
+        // RECOMMENDED JOB ROLES
+        // ============================================
+
+        displaySkills(
+            "recommendedRoles",
+            data.recommended_job_roles ||
+            data.recommended_roles ||
+            data.job_roles ||
+            []
+        );
+
+
+        // ============================================
+        // SCORE BREAKDOWN
+        // ============================================
+
+        const breakdown =
+            data.score_breakdown ||
+            data.breakdown ||
+            {};
+
+
+        setProgress(
+            "skills",
+            breakdown.skills ??
+            data.skills_score ??
+            0
+        );
+
+
+        setProgress(
+            "education",
+            breakdown.education ??
+            data.education_score ??
+            0
+        );
+
+
+        setProgress(
+            "projects",
+            breakdown.projects ??
+            data.projects_score ??
+            0
+        );
+
+
+        setProgress(
+            "experience",
+            breakdown.experience ??
+            data.experience_score ??
+            0
+        );
+
+
+        setProgress(
+            "certifications",
+            breakdown.certifications ??
+            data.certifications_score ??
+            0
+        );
+
+
+        setProgress(
+            "completeness",
+            breakdown.completeness ??
+            data.completeness_score ??
+            0
+        );
+
+
+        // ============================================
+        // EXTRACTED RESUME TEXT
+        // ============================================
+
+        const extractedText =
+            data.extracted_text ||
+            data.resume_text ||
+            data.text ||
+            data.extracted_resume_text ||
+            "";
+
+
+        document.getElementById(
+            "resumeText"
+        ).textContent =
+            extractedText ||
+            "No extracted resume text was returned by the backend.";
+
+
+        // Scroll to results
+
+        document.getElementById(
+            "results"
+        ).scrollIntoView({
+            behavior: "smooth"
+        });
+
+    }
+
+
+    // ============================================
+    // DISPLAY SKILL TAGS
+    // ============================================
+
+    function displaySkills(
+        elementId,
+        skills
+    ) {
+
+        const element =
+            document.getElementById(elementId);
+
+
+        element.innerHTML = "";
+
+
+        if (!skills) {
+
+            element.innerHTML =
+                '<span class="empty">None detected</span>';
+
+            return;
+
+        }
+
+
+        // Make sure array
+
+        if (!Array.isArray(skills)) {
+
+            skills = [skills];
+
+        }
+
+
+        if (skills.length === 0) {
+
+            element.innerHTML =
+                '<span class="empty">None detected</span>';
+
+            return;
+
+        }
+
+
+        let className = "tag";
+
+
+        if (elementId === "frontendSkills") {
+
+            className += " frontend";
+
+        } else if (elementId === "backendSkills") {
+
+            className += " backend";
+
+        } else if (elementId === "otherSkills") {
+
+            className += " other";
+
+        } else if (elementId === "matchedSkills") {
+
+            className += " matched";
+
+        } else if (elementId === "missingSkills") {
+
+            className += " missing";
+
+        } else if (elementId === "recommendedSkills") {
+
+            className += " recommended";
+
+        } else if (elementId === "recommendedRoles") {
+
+            className += " job";
+
+        }
+
+
+        skills.forEach(
+            skill => {
+
+                const span =
+                    document.createElement("span");
+
+                span.className =
+                    className;
+
+                span.textContent =
+                    skill;
+
+                element.appendChild(span);
+
+            }
+        );
+
+    }
+
+
+    // ============================================
+    // PROGRESS BAR
+    // ============================================
+
+    function setProgress(
+        name,
+        value
+    ) {
+
+        value = Number(value) || 0;
+
+        value = Math.max(
+            0,
+            Math.min(
+                100,
+                value
+            )
+        );
+
+
+        const progress =
+            document.getElementById(
+                name + "Progress"
+            );
+
+
+        const text =
+            document.getElementById(
+                name + "ScoreText"
+            );
+
+
+        if (progress) {
+
+            progress.style.width =
+                value + "%";
+
+        }
+
+
+        if (text) {
+
+            text.textContent =
+                Math.round(value) + "%";
+
+        }
+
+    }
+
+
+    // ============================================
+    // ERROR MESSAGE
+    // ============================================
+
+    function showError(message) {
+
+        const errorBox =
+            document.getElementById(
+                "errorBox"
+            );
+
+ 
+        errorBox.textContent =
+            "⚠️ " + message;
+
+
+        errorBox.style.display =
+            "block";
+
+
+        document.getElementById(
+            "loading"
+        ).style.display = "none";
+
+    }
+
+</script>
+
+</body>
+</html>
